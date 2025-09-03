@@ -296,12 +296,15 @@ class _MainScreenState extends State<MainScreen> {
     _vehiclesFuture = DatabaseService.getVehicles();
   }
 
-  static final List<Widget> _widgetOptions = <Widget>[
-    DashboardView(),
-    ServicesWiew(),
-    HistoryView(),
-    SettingsView(),
-  ];
+  // Ahora _widgetOptions se crea dinámicamente para pasar el callback
+  List<Widget> get _widgetOptions {
+    return <Widget>[
+      DashboardView(onNavigateToServices: () => _onItemTapped(1)),
+      ServicesWiew(),
+      HistoryView(),
+      SettingsView(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -391,7 +394,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+              body: Center(child: _widgetOptions[_selectedIndex]),
               bottomNavigationBar: BottomNavigationBar(
                 type: BottomNavigationBarType.fixed,
                 backgroundColor: Color(0xFF10162A), // Fondo oscuro de la barra

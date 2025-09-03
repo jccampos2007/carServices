@@ -5,7 +5,9 @@ import 'package:car_service_app/views/services.dart';
 import 'package:car_service_app/main.dart';
 
 class DashboardView extends StatefulWidget {
-  const DashboardView({super.key});
+  const DashboardView({super.key, required this.onNavigateToServices});
+
+  final VoidCallback onNavigateToServices;
 
   @override
   _DashboardViewState createState() => _DashboardViewState();
@@ -431,17 +433,12 @@ class _DashboardViewState extends State<DashboardView> {
                 ),
                 SizedBox(height: 24),
 
-                // Botón para estación de carga más cercana
                 Container(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: false).push(
-                        MaterialPageRoute(builder: (context) => ServicesWiew()),
-                      );
-                    },
+                    onPressed: widget.onNavigateToServices,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal[700],
+                      backgroundColor: Color(0x8074cfde),
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

@@ -154,10 +154,10 @@ class _ServicesWiewState extends State<ServicesWiew> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: kToolbarHeight + 16),
+                SizedBox(height: kToolbarHeight + 53),
                 // Selector de vehículo
                 SizedBox(
-                  height: 100,
+                  height: 90,
                   child: PageView.builder(
                     controller: PageController(viewportFraction: 1),
                     itemCount: vehicles.length,
@@ -183,9 +183,12 @@ class _ServicesWiewState extends State<ServicesWiew> {
                               color: Colors.white,
                             ),
                           ),
-                          subtitle: Text(
-                            "Kilometraje actual: ${vehicle.currentMileage} km",
-                            style: TextStyle(color: Colors.grey[300]),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              "Kilometraje actual: ${vehicle.currentMileage} km",
+                              style: TextStyle(color: Colors.grey[300]),
+                            ),
                           ),
                           onTap: () {
                             setState(() {
@@ -293,24 +296,30 @@ class _ServicesWiewState extends State<ServicesWiew> {
                     ),
                   ),
                 ),
-
                 SizedBox(height: 20),
 
-                // Guardar
-                Center(
-                  child: ElevatedButton.icon(
-                    icon: Icon(Icons.save),
-                    label: Text("Guardar Registro"),
+                Container(
+                  width: double.infinity,
+                  child: ElevatedButton(
                     onPressed: _guardarRegistro,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF75A6B1),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                      backgroundColor: Color(0x8074cfde),
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "Guardar Registro",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
+                SizedBox(height: 8),
               ],
             ),
           );
