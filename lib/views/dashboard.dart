@@ -55,6 +55,15 @@ class _DashboardViewState extends State<DashboardView> {
     }
   }
 
+  // Nuevo método para obtener la ruta de la imagen del vehículo
+  String getVehicleImagePath(String make, String model) {
+    if (make == 'Chery' && model == 'Arauca') {
+      return 'assets/images/chery_arauca.png';
+    }
+    // Puedes agregar más casos aquí para otros vehículos
+    return 'assets/images/placeholder_car.png'; // Una imagen por defecto
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,90 +100,51 @@ class _DashboardViewState extends State<DashboardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: 24),
+                SizedBox(height: 48),
                 // Información del usuario y vehículo
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Alex Cooper",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "${currentVehicle.make}-${currentVehicle.model}",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[300],
-                          ),
-                        ),
-                      ],
-                    ),
                     CircleAvatar(
                       radius: 24,
                       backgroundColor: Colors.grey[300],
                       child: Icon(Icons.person, color: Colors.grey[600]),
                     ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Alex Cooper",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            "${currentVehicle.make}-${currentVehicle.model}",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[300],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(height: 24),
 
-                // Tarjeta de información del vehículo
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                    side: BorderSide(
-                      color: Color(0xFF75A6B1),
-                      width: 1,
-                    ), // #75a6b1
+                Image.asset(
+                  getVehicleImagePath(
+                    currentVehicle.make,
+                    currentVehicle.model,
                   ),
-                  color: Colors.black.withOpacity(0.3),
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.directions_car,
-                          size: 40,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Kilometraje actual",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[300],
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                "${currentVehicle.currentMileage} km",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  fit: BoxFit.contain,
                 ),
-                SizedBox(height: 24),
 
                 // Sección de batería (similar a la imagen)
                 Text(

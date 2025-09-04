@@ -104,6 +104,15 @@ class _ServicesWiewState extends State<ServicesWiew> {
     });
   }
 
+  // Nuevo método para obtener la ruta de la imagen del vehículo
+  String getVehicleImagePath(String make, String model) {
+    if (make == 'Chery' && model == 'Arauca') {
+      return 'assets/images/chery_arauca.png';
+    }
+    // Puedes agregar más casos aquí para otros vehículos
+    return 'assets/images/toyota_corolla.png'; // Una imagen por defecto
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,6 +129,7 @@ class _ServicesWiewState extends State<ServicesWiew> {
           },
         ),
         title: Text("Services", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(
         future: _vehiclesFuture,
@@ -157,7 +167,7 @@ class _ServicesWiewState extends State<ServicesWiew> {
                 SizedBox(height: kToolbarHeight + 53),
                 // Selector de vehículo
                 SizedBox(
-                  height: 90,
+                  height: 110,
                   child: PageView.builder(
                     controller: PageController(viewportFraction: 1),
                     itemCount: vehicles.length,
@@ -170,31 +180,48 @@ class _ServicesWiewState extends State<ServicesWiew> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(color: Color(0xFF75A6B1), width: 1),
                         ),
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.directions_car,
-                            size: 40,
-                            color: Colors.white,
+                        child: Container(
+                          padding: EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              // Imagen del vehículo a la izquierda
+                              Image.asset(
+                                getVehicleImagePath(
+                                  vehicle.make,
+                                  vehicle.model,
+                                ),
+                                height: 80, // Ajusta el tamaño de la imagen
+                                width: 80,
+                                fit: BoxFit.contain,
+                              ),
+                              SizedBox(width: 16),
+
+                              // Texto de kilometraje a la derecha
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${vehicle.make} ${vehicle.model}",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.grey[300],
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      "Kilometraje actual: ${vehicle.currentMileage} km",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          title: Text(
-                            "${vehicle.make} ${vehicle.model}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              "Kilometraje actual: ${vehicle.currentMileage} km",
-                              style: TextStyle(color: Colors.grey[300]),
-                            ),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              _selectedVehicle = vehicle;
-                            });
-                          },
                         ),
                       );
                     },

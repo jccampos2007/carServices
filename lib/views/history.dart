@@ -1,6 +1,5 @@
 // history.dart
 import 'package:flutter/material.dart';
-import 'package:car_service_app/views/prediction_logic.dart';
 import 'package:car_service_app/main.dart';
 
 class HistoryView extends StatelessWidget {
@@ -36,11 +35,17 @@ class HistoryView extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: Text(
           "Historial de Servicios",
           style: TextStyle(color: Colors.white),
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        centerTitle: true,
       ),
       body: FutureBuilder<List<ServiceRecord>>(
         future: DatabaseService.getServiceRecords(),

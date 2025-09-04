@@ -19,6 +19,7 @@ class SettingsView extends StatelessWidget {
           },
         ),
         title: Text("Setting", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(
         future: DatabaseService.getVehicles(),

@@ -270,7 +270,7 @@ class CarServiceApp extends StatelessWidget {
         // Define colores de acento
         colorScheme: ColorScheme.dark(
           primary: Color(
-            0xFF00FFC0,
+            0xFF2AEFDA,
           ), // Verde brillante/Cian para elementos seleccionados
         ),
       ),
@@ -399,7 +399,7 @@ class _MainScreenState extends State<MainScreen> {
                 type: BottomNavigationBarType.fixed,
                 backgroundColor: Color(0xFF10162A), // Fondo oscuro de la barra
                 selectedItemColor: Color(
-                  0xFF00FFC0,
+                  0xFF2AEFDA,
                 ), // Color de ítem seleccionado
                 unselectedItemColor:
                     Colors.white54, // Color de ítems no seleccionados
