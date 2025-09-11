@@ -1,11 +1,5 @@
-// prediction_logic.dart
-import 'package:flutter/material.dart';
-import 'package:car_service_app/main.dart'; // Importa el modelo de datos real
+import 'package:car_service_app/models/vehicle.dart';
 
-// Este archivo contendrá la lógica para predecir cuándo es necesario un servicio.
-
-// Define un modelo de datos para los servicios que requieren predicción
-// Estos datos pueden ser almacenados en la base de datos en una versión futura.
 class ServiceRule {
   final String serviceName;
   final int frequencyKm; // Frecuencia en kilómetros
@@ -18,12 +12,11 @@ class ServiceRule {
   });
 }
 
-// Clase para calcular las predicciones
 class PredictionService {
   final List<ServiceRule> _serviceRules = [
     ServiceRule(
       serviceName: 'Cambio de Aceite',
-      frequencyKm: 10000,
+      frequencyKm: 5000,
       iconName: 'oil_change',
     ),
     ServiceRule(
@@ -38,7 +31,7 @@ class PredictionService {
     ),
     ServiceRule(
       serviceName: 'Cambio de Correa de Tiempo',
-      frequencyKm: 100000,
+      frequencyKm: 60000,
       iconName: 'timing_belt',
     ),
     ServiceRule(
@@ -53,11 +46,9 @@ class PredictionService {
     ),
   ];
 
-  // Ahora la función usa el modelo de datos de vehículo real (Vehicle)
   List<Map<String, dynamic>> predictServices(Vehicle vehicle) {
     List<Map<String, dynamic>> predictions = [];
 
-    // Calcula el kilometraje desde el último servicio
     final int mileageSinceLastService =
         vehicle.currentMileage - vehicle.lastServiceMileage;
 
@@ -65,46 +56,35 @@ class PredictionService {
       final int kmToNextService =
           rule.frequencyKm - (mileageSinceLastService % rule.frequencyKm);
 
-      // Simula el kilometraje promedio para una predicción más precisa.
-      // Aquí usamos una estimación simple de 20,000 km/año, ~55 km/día.
+      final double percentageRemaining =
+          (kmToNextService / rule.frequencyKm) * 100;
+
       final double avgKmPerDay = 55.0;
       final int daysToNextService = (kmToNextService / avgKmPerDay).ceil();
 
-      final DateTime nextServiceDate = vehicle.lastServiceDate.add(
-        Duration(days: daysToNextService),
-      );
+      // Convertimos días -> meses o años si corresponde
+      String timeUnit = "días";
+      int timeValue = daysToNextService;
+
+      if (timeValue >= 365) {
+        timeUnit = "años";
+        timeValue = (timeValue / 365).round();
+      } else if (timeValue >= 30) {
+        timeUnit = "meses";
+        timeValue = (timeValue / 30).round();
+      }
 
       predictions.add({
         'service': rule.serviceName,
         'kmToNextService': kmToNextService,
-        'nextServiceDate': nextServiceDate,
+        'timeRemaining': timeValue, // Número
+        'timeUnit': timeUnit, // Tipo: días, meses o años
         'icon': rule.iconName,
-        'isDue':
-            kmToNextService <=
-            1000, // Marca como pendiente si faltan 1000 km o menos
+        'isDue': kmToNextService <= 1000,
+        'percentageRemaining': percentageRemaining.toStringAsFixed(0),
       });
     }
 
     return predictions;
-  }
-}
-
-// Un simple widget para obtener un ícono basado en el nombre del ícono.
-IconData getIconData(String iconName) {
-  switch (iconName) {
-    case 'oil_change':
-      return Icons.oil_barrel;
-    case 'tire_rotation':
-      return Icons.swap_horiz;
-    case 'brakes':
-      return Icons.car_crash;
-    case 'timing_belt':
-      return Icons.access_time;
-    case 'air_filter':
-      return Icons.filter_alt;
-    case 'spark_plugs':
-      return Icons.electrical_services;
-    default:
-      return Icons.build;
   }
 }

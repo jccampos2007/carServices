@@ -1,8 +1,11 @@
-// dashboard.dart
+// dashboard.dart (fragmento corregido)
 import 'package:flutter/material.dart';
+import 'package:car_service_app/utils/icon_helper.dart';
 import 'package:car_service_app/views/prediction_logic.dart';
-import 'package:car_service_app/views/services.dart';
-import 'package:car_service_app/main.dart';
+import 'package:car_service_app/views/services_details.dart';
+
+import 'package:car_service_app/models/vehicle.dart';
+import 'package:car_service_app/database_service.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key, required this.onNavigateToServices});
@@ -36,32 +39,36 @@ class _DashboardViewState extends State<DashboardView> {
     return null;
   }
 
-  IconData getIconData(String iconName) {
-    switch (iconName) {
-      case 'oil_change':
-        return Icons.oil_barrel;
-      case 'tire_rotation':
-        return Icons.swap_horiz;
-      case 'brakes':
-        return Icons.car_crash;
-      case 'timing_belt':
-        return Icons.access_time;
-      case 'air_filter':
-        return Icons.filter_alt;
-      case 'spark_plugs':
-        return Icons.electrical_services;
-      default:
-        return Icons.build;
-    }
-  }
-
-  // Nuevo método para obtener la ruta de la imagen del vehículo
-  String getVehicleImagePath(String make, String model) {
-    if (make == 'Chery' && model == 'Arauca') {
-      return 'assets/images/chery_arauca.png';
-    }
-    // Puedes agregar más casos aquí para otros vehículos
-    return 'assets/images/placeholder_car.png'; // Una imagen por defecto
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFF10162A),
+      selectedItemColor: const Color(0xFF2AEFDA),
+      unselectedItemColor: Colors.white54,
+      showUnselectedLabels: true,
+      currentIndex: 0, // El dashboard es el primer índice (0)
+      onTap: (index) {
+        // Si se toca una pestaña diferente, navegar a esa pantalla
+        if (index != 0) {
+          Navigator.pop(context); // Cerrar Servicesdetails primero
+        }
+      },
+      items: const <BottomNavigationBarItem>[
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.add_outlined),
+          label: 'Services',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history_outlined),
+          label: 'History',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings_outlined),
+          label: 'Setting',
+        ),
+      ],
+    );
   }
 
   @override
@@ -70,37 +77,24 @@ class _DashboardViewState extends State<DashboardView> {
       backgroundColor: Colors.transparent,
       body: FutureBuilder<Vehicle?>(
         future: _currentVehicleFuture,
-        builder: (context, vehicleSnapshot) {
-          if (vehicleSnapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            );
-          } else if (vehicleSnapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${vehicleSnapshot.error}',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          } else if (!vehicleSnapshot.hasData) {
-            return Center(
-              child: Text(
-                'No hay vehículo seleccionado.',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text('No vehicle data found.'));
           }
 
-          final currentVehicle = vehicleSnapshot.data!;
+          final currentVehicle = snapshot.data!;
 
           return SingleChildScrollView(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 48),
+
                 // Información del usuario y vehículo
                 Row(
                   children: [
@@ -139,10 +133,7 @@ class _DashboardViewState extends State<DashboardView> {
                 ),
 
                 Image.asset(
-                  getVehicleImagePath(
-                    currentVehicle.make,
-                    currentVehicle.model,
-                  ),
+                  'assets/images/chery_arauca.png',
                   fit: BoxFit.contain,
                 ),
 
@@ -156,6 +147,7 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                 ),
                 SizedBox(height: 16),
+
                 Row(
                   children: [
                     Expanded(
@@ -282,111 +274,134 @@ class _DashboardViewState extends State<DashboardView> {
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 16),
-
+                SizedBox(height: 8), // Reducido de 16 a 8
                 // Lista de próximos servicios
                 FutureBuilder<List<Map<String, dynamic>>>(
                   future: _predictionsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Container(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        ),
+                  builder: (context, servicesSnapshot) {
+                    if (servicesSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (servicesSnapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${servicesSnapshot.error}'),
                       );
-                    } else if (snapshot.hasError) {
-                      return Container(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      );
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Container(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: Text(
-                            "No hay predicciones de servicio disponibles.",
-                            style: TextStyle(color: Colors.white),
-                          ),
+                    }
+                    if (!servicesSnapshot.hasData ||
+                        servicesSnapshot.data!.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No hay servicios próximos.',
+                          style: TextStyle(color: Colors.white),
                         ),
                       );
                     }
-
-                    final predictions = snapshot.data!;
+                    final upcomingServices = servicesSnapshot.data!;
 
                     return ListView.builder(
                       shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      itemCount: predictions.length,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: upcomingServices.length,
                       itemBuilder: (context, index) {
-                        final prediction = predictions[index];
-                        final bool isDue = prediction['isDue'];
-                        return Card(
-                          elevation: 0,
-                          margin: EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Color(0xFF75A6B1).withOpacity(0.5),
-                              width: 1,
-                            ), // #75a6b1
-                          ),
-                          color: isDue
-                              ? Colors.red.withOpacity(0.2)
-                              : Colors.transparent,
-                          child: ListTile(
-                            contentPadding: EdgeInsets.all(16),
-                            leading: Container(
-                              padding: EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: isDue
-                                    ? Colors.red.withOpacity(0.3)
-                                    : Colors.blue.withOpacity(0.3),
-                                shape: BoxShape.circle,
+                        final service = upcomingServices[index];
+                        final bool isDue = service['isDue'];
+                        return GestureDetector(
+                          // Navega a la vista de detalles y pasa los datos del servicio
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Servicesdetails(
+                                  serviceDetails: service,
+                                  bottomNavigationBar:
+                                      _buildBottomNavigationBar(
+                                        context,
+                                      ), // Pasa la botonera
+                                ),
                               ),
-                              child: Icon(
-                                getIconData(prediction['icon']),
-                                color: isDue
-                                    ? Colors.red
-                                    : Colors.blue.shade200,
-                              ),
-                            ),
-                            title: Text(
-                              prediction['service'],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                            );
+                          },
+                          child: Card(
+                            elevation: 0,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              side: BorderSide(
                                 color: isDue
                                     ? Colors.red.shade200
-                                    : Colors.white,
+                                    : const Color(0xFF75A6B1),
+                                width: 1,
                               ),
                             ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            color: Colors.black.withOpacity(0.3),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    "Faltan ${prediction['kmToNextService']} km",
-                                    style: TextStyle(
+                                  Container(
+                                    padding: const EdgeInsets.all(
+                                      8.0,
+                                    ), // Ajusta el padding según necesites
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0x8074cfde,
+                                      ), // Tu color con opacidad
+                                      borderRadius: BorderRadius.circular(
+                                        100,
+                                      ), // Hace el fondo circular
+                                    ),
+                                    child: Icon(
+                                      getIconData(service['icon'] ?? 'default'),
                                       color: isDue
                                           ? Colors.red.shade200
-                                          : Colors.grey[300],
+                                          : Colors
+                                                .white, // El color del ícono en sí
+                                      size:
+                                          24.0, // Ajusta el tamaño del ícono si es necesario
                                     ),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          service['service'] ?? 'N/A',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDue
+                                                ? Colors.red.shade200
+                                                : Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Recomendado a ${service['kmToNextService'] ?? 'N/A'} km',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: isDue
+                                                ? Colors.red.shade200
+                                                : Colors.grey[300],
+                                          ),
+                                        ),
+                                        Text(
+                                          'Aprox. en ${service['timeRemaining'] ?? 'N/A'} ${service['timeUnit'] ?? ''}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: isDue
+                                                ? Colors.red.shade200
+                                                : Colors.grey[300],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   Text(
-                                    "Fecha estimada: ${prediction['nextServiceDate'].day}/${prediction['nextServiceDate'].month}/${prediction['nextServiceDate'].year}",
+                                    '${service['percentageRemaining'] ?? 'N/A'} %',
                                     style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                       color: isDue
                                           ? Colors.red.shade200
                                           : Colors.grey[300],
@@ -401,20 +416,20 @@ class _DashboardViewState extends State<DashboardView> {
                     );
                   },
                 ),
-                SizedBox(height: 24),
+                SizedBox(height: 16), // Reducido de 24 a 16
 
                 Container(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: widget.onNavigateToServices,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0x8074cfde),
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: const Color(0xFF2AEFDA),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
+                    child: const Text(
                       "Add Services",
                       style: TextStyle(
                         fontSize: 16,
@@ -424,7 +439,7 @@ class _DashboardViewState extends State<DashboardView> {
                     ),
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
               ],
             ),
           );

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:car_service_app/main.dart';
+
+// Importa los archivos de modelos y servicio de base de datos
+import 'package:car_service_app/models/vehicle.dart';
+import 'package:car_service_app/models/service_record.dart';
+import 'package:car_service_app/database_service.dart';
 
 class ServicesWiew extends StatefulWidget {
   const ServicesWiew({super.key});
@@ -22,18 +26,18 @@ class _ServicesWiewState extends State<ServicesWiew> {
   late Future<List<Vehicle>> _vehiclesFuture;
   Vehicle? _selectedVehicle;
 
-  String _getIconName(String serviceName) {
-    switch (serviceName) {
-      case "Cambio de Aceite":
-        return 'oil_change';
-      case "Cambio de Correa de Tiempo":
-        return 'timing_belt';
-      case "Revisión de Frenos":
-        return 'brakes';
-      default:
-        return 'build';
-    }
-  }
+  // String _getIconName(String serviceName) {
+  //   switch (serviceName) {
+  //     case "Cambio de Aceite":
+  //       return 'oil_change';
+  //     case "Cambio de Correa de Tiempo":
+  //       return 'timing_belt';
+  //     case "Revisión de Frenos":
+  //       return 'brakes';
+  //     default:
+  //       return 'build';
+  //   }
+  // }
 
   @override
   void initState() {
@@ -80,15 +84,20 @@ class _ServicesWiewState extends State<ServicesWiew> {
     }
 
     for (var serviceName in selectedServices) {
+      // Obtener el iconName desde la base de datos
+      final iconName = await DatabaseService.getIconNameForService(serviceName);
+
       final newRecord = ServiceRecord(
         vehicleId: _selectedVehicle!.id!,
         serviceName: serviceName,
         mileage: mileage,
         date: DateTime.now(),
-        iconName: _getIconName(serviceName),
+        iconName: iconName,
         notes: _notasController.text.isEmpty ? null : _notasController.text,
+        vehicleMake: _selectedVehicle!.make,
+        vehicleModel: _selectedVehicle!.model,
       );
-      await DatabaseService.insertServiceRecord(newRecord);
+      await DatabaseService.addServiceRecord(newRecord);
     }
 
     ScaffoldMessenger.of(
@@ -123,12 +132,12 @@ class _ServicesWiewState extends State<ServicesWiew> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: Text("Services", style: TextStyle(color: Colors.white)),
+        title: Text("Services", style: TextStyle(color: Color(0xFF2AEFDA))),
         centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(

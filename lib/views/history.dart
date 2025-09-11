@@ -1,32 +1,12 @@
 // history.dart
 import 'package:flutter/material.dart';
-import 'package:car_service_app/main.dart';
+import 'package:car_service_app/utils/icon_helper.dart';
+
+import 'package:car_service_app/models/service_record.dart';
+import 'package:car_service_app/database_service.dart';
 
 class HistoryView extends StatelessWidget {
   const HistoryView({super.key});
-
-  IconData getIconData(String iconName) {
-    switch (iconName) {
-      case 'oil_change':
-        return Icons.oil_barrel;
-      case 'tire_rotation':
-        return Icons.swap_horiz;
-      case 'brakes':
-        return Icons.car_crash;
-      case 'timing_belt':
-        return Icons.access_time;
-      case 'air_filter':
-        return Icons.filter_alt;
-      case 'spark_plugs':
-        return Icons.electrical_services;
-      case 'oil':
-        return Icons.oil_barrel;
-      case 'brake':
-        return Icons.car_crash;
-      default:
-        return Icons.build;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +16,14 @@ class HistoryView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
         title: Text(
           "Historial de Servicios",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Color(0xFF2AEFDA)),
         ),
         centerTitle: true,
       ),

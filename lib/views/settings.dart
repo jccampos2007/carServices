@@ -1,6 +1,9 @@
 // settings.dart
 import 'package:flutter/material.dart';
-import 'package:car_service_app/main.dart';
+
+// Importa los archivos de modelos y servicio de base de datos
+import 'package:car_service_app/models/vehicle.dart';
+import 'package:car_service_app/database_service.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -13,12 +16,12 @@ class SettingsView extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: Text("Setting", style: TextStyle(color: Colors.white)),
+        title: Text("Setting", style: TextStyle(color: Color(0xFF2AEFDA))),
         centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(
