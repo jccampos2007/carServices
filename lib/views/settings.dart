@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 // Importa los archivos de modelos y servicio de base de datos
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/database_service.dart';
+import 'package:car_service_app/services/database_service.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});

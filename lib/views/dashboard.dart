@@ -1,11 +1,11 @@
 // dashboard.dart (fragmento corregido)
 import 'package:flutter/material.dart';
 import 'package:car_service_app/utils/icon_helper.dart';
-import 'package:car_service_app/views/prediction_logic.dart';
+import 'package:car_service_app/services/prediction_logic.dart';
 import 'package:car_service_app/views/services_details.dart';
 
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/database_service.dart';
+import 'package:car_service_app/services/database_service.dart';
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key, required this.onNavigateToServices});

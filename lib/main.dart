@@ -9,7 +9,7 @@ import 'package:car_service_app/views/history.dart';
 
 // Importa los archivos de modelos y servicio de base de datos
 import 'package:car_service_app/models/vehicle.dart';
-import 'package:car_service_app/database_service.dart';
+import 'package:car_service_app/services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
   List<Widget> get _widgetOptions {
     return <Widget>[
       DashboardView(onNavigateToServices: () => _onItemTapped(1)),
-      ServicesWiew(),
+      ServicesView(),
       HistoryView(),
       SettingsView(),
     ];
