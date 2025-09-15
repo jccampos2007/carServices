@@ -1,5 +1,6 @@
 // history.dart
 import 'package:flutter/material.dart';
+import 'package:car_service_app/main.dart';
 import 'package:car_service_app/utils/icon_helper.dart';
 import 'package:car_service_app/services/database_service.dart';
 
@@ -216,21 +217,20 @@ class _HistoryViewState extends State<HistoryView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+              (Route<dynamic> route) => false,
+            );
+          },
         ),
         title: Text(
           "Historial de Servicios",
           style: TextStyle(color: Color(0xFF2AEFDA)),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: Color(0xFF2AEFDA)),
-            onPressed: _refreshData,
-            tooltip: 'Actualizar',
-          ),
-        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _serviceRecordsFuture,

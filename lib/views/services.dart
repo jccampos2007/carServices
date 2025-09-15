@@ -1,4 +1,7 @@
+// services.dart (ajustes y refactorización)
+
 import 'package:flutter/material.dart';
+import 'package:car_service_app/main.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/models/service.dart';
@@ -37,13 +40,11 @@ class _ServicesViewState extends State<ServicesView> {
       final services = await DatabaseService.getServices();
       final servicesWithIcons = await DatabaseService.getServicesWithIcons();
 
-      // Crear mapa de iconos por serviceId
       final Map<int, String> iconMap = {};
       for (var serviceData in servicesWithIcons) {
         iconMap[serviceData['id'] as int] = serviceData['iconData'] as String;
       }
 
-      // Inicializar selección de servicios
       final Map<int, bool> selectionMap = {};
       for (var service in services) {
         selectionMap[service.id!] = false;
@@ -62,7 +63,6 @@ class _ServicesViewState extends State<ServicesView> {
 
   void _agregarServicioPersonalizado() {
     if (_nuevoServicioController.text.isNotEmpty) {
-      // En una implementación real, aquí agregarías el servicio a la BD
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -106,12 +106,6 @@ class _ServicesViewState extends State<ServicesView> {
 
     try {
       for (var serviceId in selectedServiceIds) {
-        final service = _availableServices.firstWhere(
-          (s) => s.id == serviceId,
-          orElse: () =>
-              Service(id: serviceId, serviceName: 'Servicio', iconId: 1),
-        );
-
         final newRecord = ServiceRecord(
           vehicleId: _selectedVehicle!.id!,
           serviceId: serviceId,
@@ -123,7 +117,6 @@ class _ServicesViewState extends State<ServicesView> {
         await DatabaseService.addServiceRecord(newRecord);
       }
 
-      // Actualizar el kilometraje del vehículo
       final updatedVehicle = Vehicle(
         id: _selectedVehicle!.id,
         make: _selectedVehicle!.make,
@@ -142,7 +135,6 @@ class _ServicesViewState extends State<ServicesView> {
         context,
       ).showSnackBar(SnackBar(content: Text("Registro guardado con éxito.")));
 
-      // Limpiar formulario
       _kmController.clear();
       _notasController.clear();
       setState(() {
@@ -151,7 +143,6 @@ class _ServicesViewState extends State<ServicesView> {
         );
       });
 
-      // Actualizar datos
       _vehiclesFuture = DatabaseService.getVehicles();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,45 +160,7 @@ class _ServicesViewState extends State<ServicesView> {
     return 'assets/images/default_car.png';
   }
 
-  Widget _buildServiceCheckbox(Service service, String iconName) {
-    return CheckboxListTile(
-      title: Row(
-        children: [
-          // Icono del servicio (puedes usar un widget de imagen)
-          Container(
-            width: 24,
-            height: 24,
-            margin: EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              _getIconForService(iconName),
-              size: 18,
-              color: Colors.black,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              service.serviceName,
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-      value: _selectedServices[service.id] ?? false,
-      activeColor: Color(0xFF75A6B1),
-      onChanged: (val) {
-        setState(() {
-          _selectedServices[service.id!] = val ?? false;
-        });
-      },
-    );
-  }
-
   IconData _getIconForService(String iconName) {
-    // Mapeo de nombres de iconos a IconData
     final iconMap = {
       'oil_change': Icons.local_car_wash,
       'air_filter': Icons.air,
@@ -222,6 +175,50 @@ class _ServicesViewState extends State<ServicesView> {
     return iconMap[iconName] ?? Icons.build;
   }
 
+  // Nuevo widget para la tarjeta de servicio
+  Widget _buildServiceCard(Service service) {
+    final iconName = _serviceIcons[service.id] ?? 'default_icon';
+    final isSelected = _selectedServices[service.id] ?? false;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedServices[service.id!] = !isSelected;
+        });
+      },
+      child: Card(
+        color: isSelected ? Color(0xFF75A6B1) : Colors.black.withOpacity(0.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isSelected ? Color(0xFF2AEFDA) : Color(0xFF75A6B1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _getIconForService(iconName),
+              size: 40,
+              color: isSelected ? Colors.white : Colors.white70,
+            ),
+            SizedBox(height: 8),
+            Text(
+              service.serviceName,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -232,8 +229,14 @@ class _ServicesViewState extends State<ServicesView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+              (Route<dynamic> route) => false,
+            );
+          },
         ),
         title: Text("Servicios", style: TextStyle(color: Color(0xFF2AEFDA))),
         centerTitle: true,
@@ -290,8 +293,6 @@ class _ServicesViewState extends State<ServicesView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(height: kToolbarHeight + 53),
-
-                    // Selector de vehículo
                     SizedBox(
                       height: 110,
                       child: PageView.builder(
@@ -324,9 +325,7 @@ class _ServicesViewState extends State<ServicesView> {
                                   ),
                                 ),
                                 child: Container(
-                                  padding: EdgeInsets.all(
-                                    12,
-                                  ), // Reducir padding interno
+                                  padding: EdgeInsets.all(12),
                                   child: Row(
                                     children: [
                                       Image.asset(
@@ -334,7 +333,7 @@ class _ServicesViewState extends State<ServicesView> {
                                           vehicle.make,
                                           vehicle.model,
                                         ),
-                                        height: 80, // Reducir tamaño de imagen
+                                        height: 80,
                                         width: 80,
                                         fit: BoxFit.contain,
                                       ),
@@ -349,28 +348,23 @@ class _ServicesViewState extends State<ServicesView> {
                                             Text(
                                               "${vehicle.make} ${vehicle.model}",
                                               style: TextStyle(
-                                                fontSize:
-                                                    16, // Reducir tamaño de fuente
+                                                fontSize: 16,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.white,
                                               ),
                                             ),
-                                            SizedBox(
-                                              height: 2,
-                                            ), // Reducir espacio entre líneas
+                                            SizedBox(height: 2),
                                             Text(
                                               "${vehicle.currentMileage} km",
                                               style: TextStyle(
-                                                fontSize:
-                                                    12, // Reducir tamaño de fuente
+                                                fontSize: 12,
                                                 color: Colors.grey[300],
                                               ),
                                             ),
                                             Text(
                                               "Último servicio: ${vehicle.lastServiceMileage} km",
                                               style: TextStyle(
-                                                fontSize:
-                                                    10, // Reducir tamaño de fuente
+                                                fontSize: 10,
                                                 color: Colors.grey[400],
                                               ),
                                             ),
@@ -387,8 +381,6 @@ class _ServicesViewState extends State<ServicesView> {
                       ),
                     ),
                     SizedBox(height: 24),
-
-                    // Kilometraje
                     TextField(
                       controller: _kmController,
                       keyboardType: TextInputType.number,
@@ -410,8 +402,6 @@ class _ServicesViewState extends State<ServicesView> {
                       ),
                     ),
                     SizedBox(height: 16),
-
-                    // Servicios
                     Text(
                       "Servicios Realizados",
                       style: TextStyle(
@@ -422,13 +412,24 @@ class _ServicesViewState extends State<ServicesView> {
                     ),
                     SizedBox(height: 8),
 
-                    ..._availableServices.map((service) {
-                      final iconName =
-                          _serviceIcons[service.id] ?? 'default_icon';
-                      return _buildServiceCheckbox(service, iconName);
-                    }).toList(),
+                    // Usar GridView para los servicios
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10.0,
+                        mainAxisSpacing: 10.0,
+                        childAspectRatio: 0.8,
+                      ),
+                      itemCount: _availableServices.length,
+                      itemBuilder: (context, index) {
+                        final service = _availableServices[index];
+                        return _buildServiceCard(service);
+                      },
+                    ),
 
-                    // Agregar servicio personalizado (opcional)
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -452,11 +453,8 @@ class _ServicesViewState extends State<ServicesView> {
                         ),
                       ],
                     ),
-
                     Divider(color: Color(0xFF75A6B1)),
                     SizedBox(height: 16),
-
-                    // Notas
                     TextField(
                       controller: _notasController,
                       maxLines: 3,
@@ -476,8 +474,6 @@ class _ServicesViewState extends State<ServicesView> {
                       ),
                     ),
                     SizedBox(height: 20),
-
-                    // Botón Guardar
                     Container(
                       width: double.infinity,
                       child: ElevatedButton(
