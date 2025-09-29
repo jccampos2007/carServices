@@ -8,6 +8,7 @@ class Vehicle {
   final int currentMileage;
   final DateTime lastServiceDate;
   final int lastServiceMileage;
+  final String? imageUrl; // <--- Nuevo campo para la URL/ruta de la imagen
 
   Vehicle({
     this.id,
@@ -17,6 +18,7 @@ class Vehicle {
     required this.currentMileage,
     required this.lastServiceDate,
     required this.lastServiceMileage,
+    this.imageUrl, // <--- Añadido al constructor
   });
 
   // Convierte un objeto Vehicle en un mapa para la base de datos.
@@ -29,6 +31,7 @@ class Vehicle {
       'currentMileage': currentMileage,
       'lastServiceDate': lastServiceDate.toIso8601String(),
       'lastServiceMileage': lastServiceMileage,
+      'imageUrl': imageUrl, // <--- Añadido al mapa
     };
   }
 
@@ -42,6 +45,7 @@ class Vehicle {
       currentMileage: map['currentMileage'] as int,
       lastServiceDate: DateTime.parse(map['lastServiceDate'] as String),
       lastServiceMileage: map['lastServiceMileage'] as int,
+      imageUrl: map['imageUrl'] as String?, // <--- Extraído del mapa
     );
   }
 }

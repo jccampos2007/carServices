@@ -29,7 +29,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 9, // Incrementamos la versión por los cambios
+      version: 11, // Incrementamos la versión por los cambios
       onCreate: (db, version) async {
         // Tabla de vehículos
         await db.execute(
@@ -64,7 +64,7 @@ class DatabaseService {
 
           // Crear la tabla de vehículos nuevamente
           await db.execute(
-            'CREATE TABLE $_vehiclesTableName(id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT, model TEXT, initialMileage INTEGER, currentMileage INTEGER, lastServiceDate TEXT, lastServiceMileage INTEGER)',
+            'CREATE TABLE $_vehiclesTableName(id INTEGER PRIMARY KEY AUTOINCREMENT, make TEXT, model TEXT, initialMileage INTEGER, currentMileage INTEGER, lastServiceDate TEXT, lastServiceMileage INTEGER, imageUrl TEXT)',
           );
 
           // Crear la tabla de iconos nuevamente
@@ -146,6 +146,7 @@ class DatabaseService {
           .subtract(Duration(days: 100))
           .toIso8601String(),
       'lastServiceMileage': 50000,
+      'imageUrl': 'assets/images/chery_arauca.png', // Agregar imagen
     });
 
     final vehicleId2 = await db.insert(_vehiclesTableName, {
@@ -157,6 +158,7 @@ class DatabaseService {
           .subtract(Duration(days: 100))
           .toIso8601String(),
       'lastServiceMileage': 135000,
+      'imageUrl': 'assets/images/toyota_corolla.png', // Agregar imagen
     });
 
     // Insertar registros de servicio
