@@ -1,23 +1,27 @@
 // settings.dart
 import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
-
-// Importa los archivos de modelos y servicio de base de datos
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/services/database_service.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
+  static const _backgroundColor = Colors.transparent;
+  static const _primaryColor = Color(0xFF2AEFDA);
+  static const _secondaryColor = Color(0xFF75A6B1);
+  static const _textColor = Colors.white;
+  static const _grey300 = Color(0xFFE0E0E0);
+  static const _grey400 = Color(0xFFBDBDBD);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
+          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -26,14 +30,21 @@ class SettingsView extends StatelessWidget {
             );
           },
         ),
-        title: Text("Setting", style: TextStyle(color: Color(0xFF2AEFDA))),
+        title: const Text(
+          "Settings",
+          style: TextStyle(
+            color: _textColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
       body: FutureBuilder<List<Vehicle>>(
         future: DatabaseService.getVehicles(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
@@ -41,86 +52,86 @@ class SettingsView extends StatelessWidget {
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
-                "Error al cargar vehículos: ${snapshot.error}",
-                style: TextStyle(color: Colors.white),
+                "Error loading vehicles: ${snapshot.error}",
+                style: const TextStyle(color: _textColor),
               ),
             );
           }
 
           final vehicles = snapshot.data ?? [];
-          final int registrationLimit = 3; // Límite de vehículos
+          const int registrationLimit = 3; // Vehicle limit
 
           return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Sección de gestión de vehículos
-                Text(
-                  "Mis Vehículos",
+                // Vehicle management section
+                const Text(
+                  "My Vehicles",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _textColor,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  "Vehículos registrados (${vehicles.length}/$registrationLimit):",
-                  style: TextStyle(fontSize: 16, color: Colors.grey[300]),
+                  "Registered vehicles (${vehicles.length}/$registrationLimit):",
+                  style: const TextStyle(fontSize: 16, color: _grey300),
                 ),
 
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
                 vehicles.isEmpty
-                    ? Center(
+                    ? const Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(20),
+                          padding: EdgeInsets.all(20),
                           child: Text(
-                            "Aún no tienes vehículos registrados.",
-                            style: TextStyle(color: Colors.grey[300]),
+                            "You don't have any registered vehicles yet.",
+                            style: TextStyle(color: _grey300),
                           ),
                         ),
                       )
                     : ListView.builder(
                         shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(),
                         itemCount: vehicles.length,
                         itemBuilder: (context, index) {
                           final vehicle = vehicles[index];
                           return Card(
-                            margin: EdgeInsets.only(bottom: 12),
+                            margin: const EdgeInsets.only(bottom: 12),
                             color: Colors.black.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: Color(0xFF75A6B1),
+                              side: const BorderSide(
+                                color: _secondaryColor,
                                 width: 1,
                               ),
                             ),
                             child: ListTile(
-                              leading: Icon(
+                              leading: const Icon(
                                 Icons.directions_car,
-                                color: Colors.white,
+                                color: _textColor,
                               ),
                               title: Text(
                                 "${vehicle.make} ${vehicle.model}",
-                                style: TextStyle(color: Colors.white),
+                                style: const TextStyle(color: _textColor),
                               ),
                               subtitle: Text(
-                                "Kilometraje: ${vehicle.currentMileage} km",
-                                style: TextStyle(color: Colors.grey[300]),
+                                "Mileage: ${vehicle.currentMileage} km",
+                                style: const TextStyle(color: _grey300),
                               ),
-                              trailing: Icon(
+                              trailing: const Icon(
                                 Icons.arrow_forward_ios,
-                                color: Colors.white,
+                                color: _textColor,
                                 size: 16,
                               ),
                               onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      "Ver detalles de ${vehicle.make} ${vehicle.model}",
+                                      "View details of ${vehicle.make} ${vehicle.model}",
                                     ),
                                   ),
                                 );
@@ -130,60 +141,63 @@ class SettingsView extends StatelessWidget {
                         },
                       ),
 
-                SizedBox(height: 24),
-                Divider(color: Color(0xFF75A6B1)),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
+                const Divider(color: _secondaryColor),
+                const SizedBox(height: 24),
 
-                // Opciones de configuración
-                Text(
-                  "Ajustes de la Aplicación",
+                // Application settings options
+                const Text(
+                  "App Settings",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _textColor,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
                 Card(
                   color: Colors.black.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Color(0xFF75A6B1), width: 1),
+                    side: const BorderSide(color: _secondaryColor, width: 1),
                   ),
                   child: Column(
                     children: [
                       ListTile(
-                        leading: Icon(Icons.notifications, color: Colors.white),
-                        title: Text(
-                          "Notificaciones",
-                          style: TextStyle(color: Colors.white),
+                        leading: const Icon(
+                          Icons.notifications,
+                          color: _textColor,
+                        ),
+                        title: const Text(
+                          "Notifications",
+                          style: TextStyle(color: _textColor),
                         ),
                         trailing: Switch(
                           value: true,
-                          activeColor: Color(0xFF75A6B1),
+                          activeColor: _secondaryColor,
                           onChanged: (bool value) {},
                         ),
                       ),
-                      Divider(color: Color(0xFF75A6B1), height: 1),
+                      const Divider(color: _secondaryColor, height: 1),
                       ListTile(
-                        leading: Icon(Icons.lock, color: Colors.white),
-                        title: Text(
-                          "Cambiar Contraseña",
-                          style: TextStyle(color: Colors.white),
+                        leading: const Icon(Icons.lock, color: _textColor),
+                        title: const Text(
+                          "Change Password",
+                          style: TextStyle(color: _textColor),
                         ),
-                        trailing: Icon(
+                        trailing: const Icon(
                           Icons.arrow_forward_ios,
-                          color: Colors.white,
+                          color: _textColor,
                           size: 16,
                         ),
                         onTap: () {},
                       ),
-                      Divider(color: Color(0xFF75A6B1), height: 1),
+                      const Divider(color: _secondaryColor, height: 1),
                       ListTile(
                         leading: Icon(Icons.logout, color: Colors.red[300]),
                         title: Text(
-                          "Cerrar Sesión",
+                          "Sign Out",
                           style: TextStyle(color: Colors.red[300]),
                         ),
                         trailing: Icon(
@@ -197,48 +211,48 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(height: 24),
-                Divider(color: Color(0xFF75A6B1)),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
+                const Divider(color: _secondaryColor),
+                const SizedBox(height: 24),
 
-                // Información de la aplicación
-                Text(
-                  "Información de la App",
+                // App information
+                const Text(
+                  "App Information",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: _textColor,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
 
                 Card(
                   color: Colors.black.withOpacity(0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Color(0xFF75A6B1), width: 1),
+                    side: const BorderSide(color: _secondaryColor, width: 1),
                   ),
                   child: Column(
                     children: [
                       ListTile(
-                        title: Text(
-                          "Versión",
-                          style: TextStyle(color: Colors.white),
+                        title: const Text(
+                          "Version",
+                          style: TextStyle(color: _textColor),
                         ),
-                        subtitle: Text(
+                        subtitle: const Text(
                           "1.0.0",
-                          style: TextStyle(color: Colors.grey[300]),
+                          style: TextStyle(color: _grey300),
                         ),
                       ),
-                      Divider(color: Color(0xFF75A6B1), height: 1),
+                      const Divider(color: _secondaryColor, height: 1),
                       ListTile(
-                        title: Text(
-                          "Desarrollador",
-                          style: TextStyle(color: Colors.white),
+                        title: const Text(
+                          "Developer",
+                          style: TextStyle(color: _textColor),
                         ),
-                        subtitle: Text(
+                        subtitle: const Text(
                           "Car Service Team",
-                          style: TextStyle(color: Colors.grey[300]),
+                          style: TextStyle(color: _grey300),
                         ),
                       ),
                     ],

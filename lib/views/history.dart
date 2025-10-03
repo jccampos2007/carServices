@@ -12,6 +12,14 @@ class HistoryView extends StatefulWidget {
 }
 
 class _HistoryViewState extends State<HistoryView> {
+  static const _backgroundColor = Colors.transparent;
+  static const _primaryColor = Color(0xFF2AEFDA);
+  static const _secondaryColor = Color(0xFF75A6B1);
+  static const _textColor = Colors.white;
+  static const _grey300 = Color(0xFFE0E0E0);
+  static const _grey400 = Color(0xFFBDBDBD);
+  static const _grey600 = Color(0xFF757575);
+
   late Future<List<Map<String, dynamic>>> _serviceRecordsFuture;
 
   @override
@@ -31,26 +39,26 @@ class _HistoryViewState extends State<HistoryView> {
   }
 
   Widget _buildServiceRecordCard(Map<String, dynamic> record) {
-    final serviceName = record['serviceName'] as String? ?? 'Servicio';
+    final serviceName = record['serviceName'] as String? ?? 'Service';
     final vehicleMake = record['vehicleMake'] as String? ?? '';
     final vehicleModel = record['vehicleModel'] as String? ?? '';
     final mileage = record['mileage'] as int? ?? 0;
     final date = DateTime.parse(record['date'] as String);
     final notes = record['notes'] as String?;
-    final iconName = record['serviceIcon'] as String? ?? 'Cambio de Aceite';
+    final iconName = record['serviceIcon'] as String? ?? 'oil_change';
 
     return Card(
       elevation: 0,
-      margin: EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Color(0xFF75A6B1).withOpacity(0.5), width: 1),
+        side: BorderSide(color: _secondaryColor.withOpacity(0.5), width: 1),
       ),
       color: Colors.black.withOpacity(0.3),
       child: ListTile(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.all(16),
         leading: Container(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.blue.withOpacity(0.3),
             shape: BoxShape.circle,
@@ -66,16 +74,16 @@ class _HistoryViewState extends State<HistoryView> {
           children: [
             Text(
               serviceName,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: _textColor,
                 fontSize: 16,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               '$vehicleMake $vehicleModel',
-              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+              style: const TextStyle(color: _grey300, fontSize: 14),
             ),
           ],
         ),
@@ -86,22 +94,19 @@ class _HistoryViewState extends State<HistoryView> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.speed, size: 16, color: Colors.grey[400]),
-                  SizedBox(width: 4),
-                  Text(
-                    '$mileage km',
-                    style: TextStyle(color: Colors.grey[300]),
-                  ),
+                  const Icon(Icons.speed, size: 16, color: _grey400),
+                  const SizedBox(width: 4),
+                  Text('$mileage km', style: const TextStyle(color: _grey300)),
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[400]),
-                  SizedBox(width: 4),
+                  const Icon(Icons.calendar_today, size: 16, color: _grey400),
+                  const SizedBox(width: 4),
                   Text(
                     _formatDate(date),
-                    style: TextStyle(color: Colors.grey[300]),
+                    style: const TextStyle(color: _grey300),
                   ),
                 ],
               ),
@@ -111,21 +116,21 @@ class _HistoryViewState extends State<HistoryView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Divider(color: Colors.grey[600], height: 1),
-                      SizedBox(height: 8),
-                      Text(
-                        'Notas:',
+                      const Divider(color: _grey600, height: 1),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Notes:',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[300],
+                          color: _grey300,
                           fontSize: 12,
                         ),
                       ),
                       Text(
                         notes,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontStyle: FontStyle.italic,
-                          color: Colors.grey[300],
+                          color: _grey300,
                           fontSize: 12,
                         ),
                       ),
@@ -135,13 +140,12 @@ class _HistoryViewState extends State<HistoryView> {
             ],
           ),
         ),
-        trailing: Icon(
+        trailing: const Icon(
           Icons.arrow_forward_ios,
-          color: Colors.grey[400],
+          color: _grey400,
           size: 16,
         ),
         onTap: () {
-          // Opcional: Navegar a detalles del servicio
           _showServiceDetails(record);
         },
       ),
@@ -153,35 +157,35 @@ class _HistoryViewState extends State<HistoryView> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: Text(
-          'Detalles del Servicio',
-          style: TextStyle(color: Colors.white),
+        title: const Text(
+          'Service Details',
+          style: TextStyle(color: _textColor),
         ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailItem('Servicio', record['serviceName'] as String),
+              _buildDetailItem('Service', record['serviceName'] as String),
               _buildDetailItem(
-                'Vehículo',
+                'Vehicle',
                 '${record['vehicleMake']} ${record['vehicleModel']}',
               ),
-              _buildDetailItem('Kilometraje', '${record['mileage']} km'),
+              _buildDetailItem('Mileage', '${record['mileage']} km'),
               _buildDetailItem(
-                'Fecha',
+                'Date',
                 _formatDate(DateTime.parse(record['date'] as String)),
               ),
               if (record['notes'] != null &&
                   (record['notes'] as String).isNotEmpty)
-                _buildDetailItem('Notas', record['notes'] as String),
+                _buildDetailItem('Notes', record['notes'] as String),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cerrar', style: TextStyle(color: Color(0xFF2AEFDA))),
+            child: const Text('Close', style: TextStyle(color: _primaryColor)),
           ),
         ],
       ),
@@ -196,14 +200,76 @@ class _HistoryViewState extends State<HistoryView> {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.grey[300],
+              color: _grey300,
               fontSize: 12,
             ),
           ),
-          Text(value, style: TextStyle(color: Colors.white, fontSize: 14)),
-          SizedBox(height: 8),
+          Text(value, style: const TextStyle(color: _textColor, fontSize: 14)),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(_textColor),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 16),
+          const Text(
+            "Error loading history",
+            style: TextStyle(color: _textColor, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: const TextStyle(color: _grey300),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _refreshData,
+            style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
+            child: const Text("Retry"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.history, color: _grey400, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            "No service records",
+            style: TextStyle(
+              color: _grey300,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Services you add will appear here",
+            style: TextStyle(color: _grey400),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -214,10 +280,10 @@ class _HistoryViewState extends State<HistoryView> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF2AEFDA)),
+          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
@@ -226,9 +292,13 @@ class _HistoryViewState extends State<HistoryView> {
             );
           },
         ),
-        title: Text(
-          "Historial de Servicios",
-          style: TextStyle(color: Color(0xFF2AEFDA)),
+        title: const Text(
+          "Service History",
+          style: TextStyle(
+            color: _textColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -236,63 +306,11 @@ class _HistoryViewState extends State<HistoryView> {
         future: _serviceRecordsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            );
+            return _buildLoadingIndicator();
           } else if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  SizedBox(height: 16),
-                  Text(
-                    "Error al cargar el historial",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "${snapshot.error}",
-                    style: TextStyle(color: Colors.grey[300]),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _refreshData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF2AEFDA),
-                    ),
-                    child: Text("Reintentar"),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorWidget(snapshot.error.toString());
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.history, color: Colors.grey[400], size: 64),
-                  SizedBox(height: 16),
-                  Text(
-                    "No hay registros de servicio",
-                    style: TextStyle(
-                      color: Colors.grey[300],
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Los servicios que agregues aparecerán aquí",
-                    style: TextStyle(color: Colors.grey[400]),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
+            return _buildEmptyState();
           }
 
           final records = snapshot.data!;
@@ -310,11 +328,11 @@ class _HistoryViewState extends State<HistoryView> {
           return RefreshIndicator(
             onRefresh: () async {
               _refreshData();
-              await Future.delayed(Duration(milliseconds: 500));
+              await Future.delayed(const Duration(milliseconds: 500));
             },
-            color: Color(0xFF2AEFDA),
+            color: _primaryColor,
             child: ListView.builder(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               itemCount: sortedRecords.length,
               itemBuilder: (context, index) {
                 return _buildServiceRecordCard(sortedRecords[index]);

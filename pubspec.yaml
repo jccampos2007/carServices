@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   sqflite: ^2.3.3
   image_picker: ^1.1.1
+  location: ^5.0.0  # Agregar este paquete para geolocalización
+  permission_handler: ^11.0.0  # Para manejo de permisos
 
 dev_dependencies:
   flutter_test:

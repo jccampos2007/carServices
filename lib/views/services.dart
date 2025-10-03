@@ -1,10 +1,11 @@
-// services.dart (mejorado con mejor UI/UX)
+// services.dart (with automatic mileage feature)
 import 'package:flutter/material.dart';
 import 'package:car_service_app/main.dart';
 import 'package:car_service_app/models/vehicle.dart';
 import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/models/service.dart';
 import 'package:car_service_app/services/database_service.dart';
+import 'package:car_service_app/services/location_service.dart';
 
 class ServicesView extends StatefulWidget {
   const ServicesView({super.key});
@@ -14,32 +15,36 @@ class ServicesView extends StatefulWidget {
 }
 
 class _ServicesViewState extends State<ServicesView> {
-  // Controladores
-  final TextEditingController _kmController = TextEditingController();
-  final TextEditingController _notasController = TextEditingController();
-  final TextEditingController _nuevoServicioController =
-      TextEditingController();
+  // Controllers
+  final TextEditingController _mileageController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
 
-  // Estado
+  // State
   Map<int, bool> _selectedServices = {};
   List<Service> _availableServices = [];
   Map<int, String> _serviceIcons = {};
   Vehicle? _selectedVehicle;
+  bool _hasServices = false;
+  bool _isLocationEnabled = false;
+  double _autoMileage = 0.0;
 
   // Futures
   late Future<List<Vehicle>> _vehiclesFuture;
   late Future<Map<String, dynamic>> _servicesDataFuture;
 
-  // Constantes
+  // Constants
   static const _primaryColor = Color(0xFF2AEFDA);
   static const _secondaryColor = Color(0xFF75A6B1);
   static const _backgroundColor = Colors.transparent;
   static const _textColor = Colors.white;
+  static const _grey300 = Color(0xFFE0E0E0);
+  static const _grey400 = Color(0xFFBDBDBD);
 
   @override
   void initState() {
     super.initState();
     _initializeData();
+    _checkLocationStatus();
   }
 
   void _initializeData() {
@@ -47,12 +52,28 @@ class _ServicesViewState extends State<ServicesView> {
     _servicesDataFuture = _loadServicesData();
   }
 
+  void _checkLocationStatus() async {
+    final locationService = LocationService();
+
+    // Verificar permisos de ubicación
+    final hasPermission = await locationService.checkLocationPermission();
+
+    setState(() {
+      _isLocationEnabled = hasPermission;
+
+      // Si tenemos permisos y el tracking está activo, obtener distancia automática
+      if (_isLocationEnabled && locationService.isTracking) {
+        _autoMileage = locationService.todayDistance;
+      }
+    });
+  }
+
   Future<Map<String, dynamic>> _loadServicesData() async {
     try {
-      // Obtener servicios usando DatabaseService
+      // Get services using DatabaseService
       final services = await DatabaseService.getServices();
 
-      // Obtener servicios con iconos usando el método específico
+      // Get services with icons using the specific method
       final servicesWithIcons = await DatabaseService.getServicesWithIcons();
 
       final Map<int, String> iconMap = {};
@@ -80,68 +101,108 @@ class _ServicesViewState extends State<ServicesView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
+        backgroundColor: isError ? Colors.red : _primaryColor,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  void _agregarServicioPersonalizado() {
-    if (_nuevoServicioController.text.isNotEmpty) {
+  void _useAutoMileage() async {
+    if (!_isLocationEnabled) {
       _showSnackBar(
-        "Función para agregar servicios personalizados próximamente",
+        "Location tracking is not enabled. Please enable location services in settings.",
+        isError: true,
       );
-      _nuevoServicioController.clear();
+      return;
     }
+
+    if (_selectedVehicle == null) {
+      _showSnackBar("Please select a vehicle first.", isError: true);
+      return;
+    }
+
+    final locationService = LocationService();
+    final currentAutoMileage = locationService.todayDistance;
+
+    // Calculate estimated current mileage: current vehicle mileage + today's auto mileage
+    final estimatedMileage =
+        _selectedVehicle!.currentMileage + currentAutoMileage.round();
+
+    setState(() {
+      _mileageController.text = estimatedMileage.toString();
+      _autoMileage = currentAutoMileage;
+    });
+
+    _showSnackBar(
+      "Auto mileage set to $estimatedMileage km (Today: ${currentAutoMileage.toStringAsFixed(1)} km)",
+    );
   }
 
   bool _validateInputs() {
-    if (_selectedVehicle == null || _kmController.text.isEmpty) {
+    if (_selectedVehicle == null || _mileageController.text.isEmpty) {
       _showSnackBar(
-        "Por favor, selecciona un vehículo y el kilometraje.",
+        "Please select a vehicle and enter the mileage.",
         isError: true,
       );
       return false;
     }
 
-    final mileage = int.tryParse(_kmController.text) ?? 0;
+    final mileage = int.tryParse(_mileageController.text) ?? 0;
     if (mileage == 0) {
-      _showSnackBar("Por favor, ingresa un kilometraje válido.", isError: true);
+      _showSnackBar("Please enter a valid mileage.", isError: true);
       return false;
     }
 
-    final selectedServiceIds = _selectedServices.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
-        .toList();
-
-    if (selectedServiceIds.isEmpty) {
+    if (mileage < _selectedVehicle!.currentMileage) {
       _showSnackBar(
-        "Por favor, selecciona al menos un servicio.",
+        "Mileage cannot be less than current vehicle mileage (${_selectedVehicle!.currentMileage} km).",
         isError: true,
       );
       return false;
+    }
+
+    // Only validate services if the switch is enabled
+    if (_hasServices) {
+      final selectedServiceIds = _selectedServices.entries
+          .where((entry) => entry.value)
+          .map((entry) => entry.key)
+          .toList();
+
+      if (selectedServiceIds.isEmpty) {
+        _showSnackBar("Please select at least one service.", isError: true);
+        return false;
+      }
     }
 
     return true;
   }
 
-  Future<void> _guardarRegistro() async {
+  Future<void> _saveRecord() async {
     if (!_validateInputs()) return;
 
-    final mileage = int.parse(_kmController.text);
-    final selectedServiceIds = _selectedServices.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
-        .toList();
+    final mileage = int.parse(_mileageController.text);
+    List<int> selectedServiceIds = [];
+
+    // Only get selected services if the switch is enabled
+    if (_hasServices) {
+      selectedServiceIds = _selectedServices.entries
+          .where((entry) => entry.value)
+          .map((entry) => entry.key)
+          .toList();
+    }
 
     try {
-      await _saveServiceRecords(mileage, selectedServiceIds);
+      // Only save service records if there are selected services
+      if (_hasServices && selectedServiceIds.isNotEmpty) {
+        await _saveServiceRecords(mileage, selectedServiceIds);
+      }
+
       await _updateVehicleData(mileage);
 
-      _showSnackBar("Registro guardado con éxito.");
+      _showSnackBar("Service record saved successfully!");
       _resetForm();
     } catch (e) {
-      _showSnackBar("Error al guardar el registro: $e", isError: true);
+      _showSnackBar("Error saving record: $e", isError: true);
     }
   }
 
@@ -152,7 +213,7 @@ class _ServicesViewState extends State<ServicesView> {
         serviceId: serviceId,
         mileage: mileage,
         date: DateTime.now(),
-        notes: _notasController.text.isEmpty ? null : _notasController.text,
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
       await DatabaseService.addServiceRecord(newRecord);
     }
@@ -176,9 +237,10 @@ class _ServicesViewState extends State<ServicesView> {
   }
 
   void _resetForm() {
-    _kmController.clear();
-    _notasController.clear();
+    _mileageController.clear();
+    _notesController.clear();
     setState(() {
+      _hasServices = false;
       _selectedServices = _selectedServices.map(
         (key, value) => MapEntry(key, false),
       );
@@ -195,11 +257,13 @@ class _ServicesViewState extends State<ServicesView> {
       'battery': Icons.battery_charging_full,
       'timing_belt': Icons.settings,
       'car_wash': Icons.local_car_wash,
+      'engine': Icons.engineering,
+      'suspension': Icons.airline_seat_recline_normal,
     };
     return iconMap[iconName] ?? Icons.build;
   }
 
-  // Widgets de construcción MEJORADOS
+  // Build widgets MODIFIED
 
   Widget _buildServiceCard(Service service) {
     final iconName = _serviceIcons[service.id] ?? 'default_icon';
@@ -208,23 +272,23 @@ class _ServicesViewState extends State<ServicesView> {
     return GestureDetector(
       onTap: () => setState(() => _selectedServices[service.id!] = !isSelected),
       child: Container(
-        margin: const EdgeInsets.all(4), // Más espacio entre cards
+        margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: isSelected ? _primaryColor : Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12), // Bordes más redondeados
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? Colors.white : _secondaryColor,
-            width: 2, // Borde más grueso para mejor feedback táctil
+            width: 2,
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12), // Área de toque más grande
+              padding: const EdgeInsets.all(12),
               child: Icon(
                 _getIconForService(iconName),
-                size: 32, // Íconos más grandes
+                size: 32,
                 color: isSelected ? Colors.white : _textColor,
               ),
             ),
@@ -248,18 +312,18 @@ class _ServicesViewState extends State<ServicesView> {
   }
 
   Widget _buildVehicleCard(Vehicle vehicle, bool isSelected) {
-    // Determinar la imagen basada en make y model si imageUrl está vacío
+    // Determine image based on make and model if imageUrl is empty
     String getImagePath() {
       if (vehicle.imageUrl != null && vehicle.imageUrl!.isNotEmpty) {
         return vehicle.imageUrl!;
       }
-      // Fallback basado en make y model
+      // Fallback based on make and model
       if (vehicle.make == 'Chery' && vehicle.model == 'Arauca') {
         return 'assets/images/chery_arauca.png';
       } else if (vehicle.make == 'Toyota' && vehicle.model == 'Corolla') {
         return 'assets/images/toyota_corolla.png';
       }
-      return 'assets/images/default_car.png'; // Imagen por defecto
+      return 'assets/images/default_car.png'; // Default image
     }
 
     return Card(
@@ -275,12 +339,12 @@ class _ServicesViewState extends State<ServicesView> {
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0),
       child: Padding(
-        padding: const EdgeInsets.all(12), // Más padding
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             Image.asset(
               getImagePath(),
-              width: 70, // Imagen ligeramente más pequeña
+              width: 70,
               height: 70,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
@@ -300,7 +364,7 @@ class _ServicesViewState extends State<ServicesView> {
                   Text(
                     "${vehicle.make} ${vehicle.model}",
                     style: const TextStyle(
-                      fontSize: 16, // Texto más grande
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: _textColor,
                     ),
@@ -309,14 +373,27 @@ class _ServicesViewState extends State<ServicesView> {
                   Text(
                     "${vehicle.currentMileage} km",
                     style: TextStyle(
-                      fontSize: 14, // Texto más grande
-                      color: _primaryColor, // Usar cyan para el kilometraje
+                      fontSize: 14,
+                      color: _primaryColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
+            if (_isLocationEnabled)
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: _primaryColor,
+                  size: 16,
+                ),
+              ),
           ],
         ),
       ),
@@ -325,7 +402,7 @@ class _ServicesViewState extends State<ServicesView> {
 
   Widget _buildVehicleSelection(List<Vehicle> vehicles) {
     return SizedBox(
-      height: 90, // Altura ligeramente mayor
+      height: 90,
       child: PageView.builder(
         controller: PageController(viewportFraction: 1.0),
         itemCount: vehicles.length,
@@ -352,24 +429,43 @@ class _ServicesViewState extends State<ServicesView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Kilometraje actual",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white, // Título en blanco con negrita
-          ),
+        Row(
+          children: [
+            Text(
+              "Current Mileage *",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const Spacer(),
+            if (_isLocationEnabled)
+              ElevatedButton.icon(
+                onPressed: _useAutoMileage,
+                icon: const Icon(Icons.location_on, size: 16),
+                label: const Text("Auto Mileage"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: _kmController,
+          controller: _mileageController,
           keyboardType: TextInputType.number,
-          style: const TextStyle(
-            color: _textColor,
-            fontSize: 16,
-          ), // Texto más grande
+          style: const TextStyle(color: _textColor, fontSize: 16),
           decoration: InputDecoration(
-            hintText: "Ingresa el kilometraje",
+            hintText: "Enter current mileage",
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
             border: const OutlineInputBorder(
               borderSide: BorderSide(color: _secondaryColor),
@@ -378,12 +474,10 @@ class _ServicesViewState extends State<ServicesView> {
               borderSide: BorderSide(color: _secondaryColor),
             ),
             focusedBorder: const OutlineInputBorder(
-              borderSide: BorderSide(
-                color: _primaryColor,
-              ), // Cyan cuando está enfocado
+              borderSide: BorderSide(color: _primaryColor),
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16, // Más padding interno
+              horizontal: 16,
               vertical: 14,
             ),
             suffixText: "km",
@@ -391,92 +485,145 @@ class _ServicesViewState extends State<ServicesView> {
               color: _primaryColor,
               fontWeight: FontWeight.bold,
             ),
+            prefixIcon: const Icon(Icons.speed, color: _secondaryColor),
           ),
+        ),
+        if (_isLocationEnabled && _autoMileage > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _primaryColor.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.directions_car, color: _primaryColor, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Today's auto mileage: ${_autoMileage.toStringAsFixed(1)} km",
+                    style: TextStyle(
+                      color: _primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (_selectedVehicle != null)
+                  Text(
+                    "Total: ${_selectedVehicle!.currentMileage + _autoMileage.round()} km",
+                    style: const TextStyle(
+                      color: _textColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        if (!_isLocationEnabled) ...[
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () {
+              _showSnackBar(
+                "Enable location services to use automatic mileage tracking.",
+                isError: true,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_off, color: Colors.orange, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Location tracking disabled - Auto mileage unavailable",
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildServicesSwitch() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          "Includes Services?",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Switch(
+          value: _hasServices,
+          onChanged: (bool value) {
+            setState(() {
+              _hasServices = value;
+              // Reset service selections when deactivating
+              if (!value) {
+                _selectedServices = _selectedServices.map(
+                  (key, value) => MapEntry(key, false),
+                );
+              }
+            });
+          },
+          activeColor: _primaryColor,
+          inactiveTrackColor: Colors.grey[600],
         ),
       ],
     );
   }
 
   Widget _buildServicesGrid() {
+    if (!_hasServices) {
+      return const SizedBox.shrink(); // Hide section if no services
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Servicios Realizados",
+          "Services Performed",
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white, // Título en blanco con negrita
+            color: Colors.white,
           ),
         ),
-        const SizedBox(height: 12), // Espaciado reducido
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: 8.0, // Más espacio entre columnas
-            mainAxisSpacing: 8.0, // Más espacio entre filas
-            childAspectRatio: 0.85, // Proporción ligeramente ajustada
+            crossAxisSpacing: 8.0,
+            mainAxisSpacing: 8.0,
+            childAspectRatio: 0.85,
           ),
           itemCount: _availableServices.length,
           itemBuilder: (context, index) =>
               _buildServiceCard(_availableServices[index]),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCustomServiceInput() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Agregar servicio personalizado",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white, // Título en blanco con negrita
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _nuevoServicioController,
-                style: const TextStyle(color: _textColor, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: "Nombre del servicio...",
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: const OutlineInputBorder(
-                    borderSide: BorderSide(color: _secondaryColor),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: _secondaryColor),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: _primaryColor),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: _primaryColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                onPressed: _agregarServicioPersonalizado,
-              ),
-            ),
-          ],
         ),
       ],
     );
@@ -487,20 +634,20 @@ class _ServicesViewState extends State<ServicesView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Notas (opcional)",
+          "Notes (optional)",
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white, // Título en blanco con negrita
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: _notasController,
+          controller: _notesController,
           maxLines: 3,
           style: const TextStyle(color: _textColor, fontSize: 14),
           decoration: InputDecoration(
-            hintText: "Agregar notas adicionales...",
+            hintText: "Add additional notes...",
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: const OutlineInputBorder(
               borderSide: BorderSide(color: _secondaryColor),
@@ -511,7 +658,7 @@ class _ServicesViewState extends State<ServicesView> {
             focusedBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: _primaryColor),
             ),
-            contentPadding: const EdgeInsets.all(16), // Más padding interno
+            contentPadding: const EdgeInsets.all(16),
           ),
         ),
       ],
@@ -519,44 +666,110 @@ class _ServicesViewState extends State<ServicesView> {
   }
 
   Widget _buildSaveButton() {
+    final bool canSave =
+        _mileageController.text.isNotEmpty && _selectedVehicle != null;
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _guardarRegistro,
+        onPressed: canSave ? _saveRecord : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _primaryColor, // Usar cyan primario
-          padding: const EdgeInsets.symmetric(vertical: 16), // Más alto
+          backgroundColor: canSave ? _primaryColor : _grey400,
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // Bordes más redondeados
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: const Text(
-          "Guardar Registro",
-          style: TextStyle(
-            fontSize: 16, // Texto más grande
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.save, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              "Save Record",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            if (_isLocationEnabled && _autoMileage > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "AUTO",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
 
   Widget _buildLoadingIndicator() {
-    return const Center(child: CircularProgressIndicator(color: _textColor));
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: _textColor),
+          SizedBox(height: 16),
+          Text("Loading services...", style: TextStyle(color: _textColor)),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorWidget(String error) {
     return Center(
-      child: Text('Error: $error', style: const TextStyle(color: _textColor)),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 16),
+          const Text(
+            "Error loading data",
+            style: TextStyle(color: _textColor, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: const TextStyle(color: _grey300),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildNoVehiclesWidget() {
-    return const Center(
-      child: Text(
-        'No hay vehículos registrados.',
-        style: TextStyle(color: _textColor),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.directions_car_outlined, color: _grey400, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'No vehicles registered.',
+            style: TextStyle(color: _textColor, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Please add a vehicle first to record services.',
+            style: TextStyle(color: _grey300),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -579,22 +792,22 @@ class _ServicesViewState extends State<ServicesView> {
         }
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0), // Más padding general
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildVehicleSelection(vehicles),
-              const SizedBox(height: 24), // Más espacio entre secciones
+              const SizedBox(height: 24),
               _buildMileageInput(),
-              const SizedBox(height: 24), // Más espacio entre secciones
+              const SizedBox(height: 24),
+              _buildServicesSwitch(),
+              const SizedBox(height: 16),
               _buildServicesGrid(),
-              const SizedBox(height: 24), // Más espacio entre secciones
-              _buildCustomServiceInput(),
-              const SizedBox(height: 24), // Más espacio entre secciones
+              const SizedBox(height: 24),
               _buildNotesInput(),
-              const SizedBox(height: 24), // Más espacio entre secciones
+              const SizedBox(height: 24),
               _buildSaveButton(),
-              const SizedBox(height: 24), // Más espacio al final
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -609,16 +822,37 @@ class _ServicesViewState extends State<ServicesView> {
       appBar: AppBar(
         backgroundColor: _backgroundColor,
         elevation: 0,
-        // ELIMINADO: Botón de volver (redundante con Bottom Navigation)
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: _textColor),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+              (Route<dynamic> route) => false,
+            );
+          },
+        ),
         title: Text(
-          "Servicios",
+          "Services",
           style: TextStyle(
-            color: Colors.white, // Título en blanco
-            fontSize: 20, // Tamaño consistente con otras pantallas
+            color: _textColor,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (_isLocationEnabled)
+            IconButton(
+              icon: const Icon(Icons.location_on, color: Color(0xFF2AEFDA)),
+              onPressed: () {
+                _showSnackBar(
+                  "Location tracking enabled - Auto mileage available",
+                );
+              },
+              tooltip: "Location tracking active",
+            ),
+        ],
       ),
       body: FutureBuilder<List<Vehicle>>(
         future: _vehiclesFuture,
