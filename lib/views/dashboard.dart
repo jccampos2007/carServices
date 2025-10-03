@@ -4,7 +4,7 @@ import 'package:car_service_app/models/service_record.dart';
 import 'package:car_service_app/services/location_service.dart';
 import 'package:car_service_app/services/database_service.dart';
 import 'package:car_service_app/services/prediction_logic.dart';
-import 'package:car_service_app/utils/index.dart' as AppUtils;
+import 'package:car_service_app/utils/index.dart';
 import 'package:car_service_app/views/services_details.dart';
 
 class DashboardView extends StatefulWidget {
@@ -410,7 +410,7 @@ class _DashboardViewState extends State<DashboardView> {
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Icon(
-                    AppUtils.getIconData(service['icon'] ?? 'default'),
+                    getIconData(service['icon'] ?? 'default'),
                     color: isUrgent ? Colors.red.shade400 : Colors.white,
                     size: 24.0,
                   ),
@@ -553,7 +553,7 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppUtils.DateUtils.formatDate(service.date),
+                    DateFormatter.formatDate(service.date),
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
